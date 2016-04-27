@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include <SFML/Graphics.hpp>
 
 const float width = 640;
@@ -7,7 +9,7 @@ const float paddle_height = 100;
 const float paddle_width = 25;
 
 const sf::Vector2f velocity(1.0f, 1.0f);
-const float paddle_speed = 3.0f;
+const float paddle_speed = 0.0005f;
 
 bool paddle1_up = false;
 bool paddle1_down = false;
@@ -17,8 +19,27 @@ bool paddle2_down = false;
 
 int main(int argc, char* argv[])
 {
+	std::string fps_str = "Initalizing..";
+	sf::Font fps_font;
+	fps_font.loadFromFile("../Consola.ttf");
+	sf::Text fps_text;
+	fps_text.setFont(fps_font);
+	fps_text.setPosition(width / 2.4, height - 25);
+	fps_text.setCharacterSize(9);
+
 	sf::RenderWindow window(sf::VideoMode(640, 480), "Pong 2");
-	window.setFramerateLimit(60);
+
+	if (argc > 2)
+	{
+		if (std::strcmp(argv[1], "-limitFPS") == 0)
+		{
+			window.setFramerateLimit(std::stoi(argv[2]));
+			std::cout << "Limiting framerate to (roughly) " << argv[2] << "\n";
+		}
+	}
+	else
+		std::cout << "Running program without extra arguments.\n\n";
+
 	sf::RectangleShape	paddle1(sf::Vector2f(paddle_width, paddle_height)),
 						paddle2(sf::Vector2f(paddle_width, paddle_height));
 	paddle1.setPosition(25, 25);
@@ -28,8 +49,25 @@ int main(int argc, char* argv[])
 	test_line.setPosition(0, 25);
 	test_line.setFillColor(sf::Color::Blue);
 
+	long long framespersecond = 0;
+	sf::Clock delta_clock, fps_clock;
+	sf::Time curr_time, prev_time, delta;
 	while (window.isOpen())
 	{
+		if (fps_clock.getElapsedTime().asSeconds() < 1.0f)
+		{
+			framespersecond++;
+		}
+		else
+		{
+			//std::cout << "FPS:\t" << framespersecond << "\n";
+			//std::cout << "Delta:\t" << delta.asMicroseconds() << "\t(in microseconds)\n";
+			fps_text.setString(fps_str);
+			framespersecond = 0;
+			fps_clock.restart();
+		}
+		// Start clock before handling events
+		curr_time = delta_clock.getElapsedTime();
 		sf::Event event;
 		while (window.pollEvent(event))
 		{
@@ -66,20 +104,27 @@ int main(int argc, char* argv[])
 			}
 		}
 
+		delta = (curr_time - prev_time);
+		prev_time = curr_time;
+
+		fps_str = "FPS: " + std::to_string(framespersecond);
+		fps_str += "\tDelta: " + (std::to_string(delta.asMicroseconds()));
+
 		if (paddle1_up)
-			paddle1.move(sf::Vector2f(0.0f, -paddle_speed));
+			paddle1.move(sf::Vector2f(0.0f, -(paddle_speed * delta.asMicroseconds())));
 		if (paddle1_down)
-			paddle1.move(sf::Vector2f(0.0f, paddle_speed));
+			paddle1.move(sf::Vector2f(0.0f, (paddle_speed * delta.asMicroseconds())));
 
 		if (paddle2_up)
-			paddle2.move(sf::Vector2f(0.0f, -paddle_speed));
+			paddle2.move(sf::Vector2f(0.0f, -(paddle_speed * delta.asMicroseconds())));
 		if (paddle2_down)
-			paddle2.move(sf::Vector2f(0.0f, paddle_speed));
+			paddle2.move(sf::Vector2f(0.0f, (paddle_speed * delta.asMicroseconds())));
 
 		window.clear();
 		window.draw(paddle1);
 		window.draw(paddle2);
 		window.draw(test_line);
+		window.draw(fps_text);
 		window.display();
 	}
 
