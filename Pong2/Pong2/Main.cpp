@@ -1,5 +1,7 @@
 #include <iostream>
 #include <cstdlib>
+#include <vector>
+
 #include <SFML/Graphics.hpp>
 
 const float width = 640;
